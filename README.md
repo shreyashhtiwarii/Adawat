@@ -1,371 +1,148 @@
 # AI Voice & Text Assistant with RAG
 
-An AI-powered web application that combines **Text-to-Speech (TTS), Speech-to-Text (STT), and Text-to-Text (TTT)** through a unified interactive interface. The application uses Retrieval-Augmented Generation (RAG) to retrieve relevant information from stored conversations and generate context-aware responses.
+An AI-powered web application that allows users to communicate with an AI assistant using text and voice. The application supports **English only** and uses Retrieval-Augmented Generation (RAG) to retrieve relevant information from previous conversations and generate contextual responses.
 
-Built using Django, PostgreSQL, and modern AI and speech-processing technologies.
+**Technology Stack:** Django, PostgreSQL, pgvector, OpenAI Whisper, gTTS, HTML, CSS, and JavaScript.
 
-## Table of Contents
+## 1. Project Overview
 
-- [Project Overview](#project-overview)
-- [Key Features](#key-features)
-- [System Architecture](#system-architecture)
-- [Interaction Workflow](#interaction-workflow)
-- [RAG Architecture](#rag-architecture)
-- [Technology Stack](#technology-stack)
-- [Database Design](#database-design)
-- [API Design](#api-design)
-- [Project Structure](#project-structure)
-- [Security and Privacy](#security-and-privacy)
-- [Development Roadmap](#development-roadmap)
+The application provides three main features through a simple web interface:
 
-## Project Overview
+1. **Text-to-Text (TTT):** Users type a message and receive an AI-generated text response.
+2. **Speech-to-Text (STT):** Users speak in English, and Whisper converts their speech into text.
+3. **Text-to-Speech (TTS):** The application converts text or AI-generated responses into spoken English audio using gTTS.
 
-The goal of this project is to build a unified AI assistant that allows users to interact naturally through text and voice.
+The system stores conversation history in PostgreSQL and uses RAG to retrieve relevant information from previous conversations.
 
-A central interaction button serves as the primary control for selecting and activating the application's three modes:
+## 2. Key Features
 
-1. **Text-to-Text:** Submit a text prompt and receive an AI-generated response enhanced with relevant retrieved context.
-2. **Speech-to-Text:** Record speech, convert it into text, and optionally submit the transcription to the AI assistant.
-3. **Text-to-Speech:** Convert user-provided text or an AI-generated response into spoken audio.
+- Simple interface with a central interaction button.
+- English-only voice and text interaction.
+- Speech recognition using OpenAI Whisper.
+- English speech generation using gTTS.
+- AI-generated responses using a language model.
+- Conversation history stored in PostgreSQL.
+- Semantic search using pgvector.
+- RAG-based contextual responses.
+- Basic user authentication and data protection.
 
-The application maintains conversation history in PostgreSQL and uses vector-based semantic retrieval to make relevant stored information available to the AI model.
+## 3. System Architecture
 
-## Key Features
-
-- Unified interface with a central interaction button.
-- Text-based AI conversations.
-- Speech recognition and transcription.
-- Text-to-speech audio generation.
-- Retrieval-Augmented Generation for context-aware responses.
-- Persistent conversation history.
-- Semantic search over stored conversation memories.
-- PostgreSQL database with pgvector for vector similarity search.
-- Modular Django backend.
-- User authentication and conversation access controls.
-- Extensible architecture for future AI capabilities.
-
-## System Architecture
-
-The architecture separates the frontend, backend services, AI processing, and persistent storage.
-
-```mermaid
-flowchart TB
-    U["User"]
-
-    subgraph FE["Frontend Layer"]
-        UI["Interactive Web Interface"]
-        CB["Central Interaction Button"]
-        MODE["Mode Selector"]
-        AUDIO["Microphone and Audio Player"]
-    end
-
-    subgraph BE["Backend Layer"]
-        API["Django REST Framework"]
-        AUTH["Authentication and Authorization"]
-        ROUTER["Mode Router"]
-        CHAT["Conversation Service"]
-        SPEECH["Speech Processing Service"]
-        RAG["RAG Orchestrator"]
-    end
-
-    subgraph AI["AI Processing Layer"]
-        STT["Speech-to-Text Model"]
-        TTS["Text-to-Speech Engine"]
-        EMB["Embedding Model"]
-        RET["Semantic Retriever"]
-        LLM["Large Language Model"]
-    end
-
-    subgraph DB["Data Layer"]
-        PG[("PostgreSQL")]
-        VEC[("pgvector Embeddings")]
-        MEDIA[("Audio and Media Storage")]
-    end
-
-    U --> UI
-    UI --> CB
-    CB --> MODE
-    MODE --> API
-    AUDIO <--> UI
-
-    API --> AUTH
-    AUTH --> ROUTER
-    ROUTER --> CHAT
-    ROUTER --> SPEECH
-    ROUTER --> RAG
-
-    SPEECH --> STT
-    SPEECH --> TTS
-
-    RAG --> EMB
-    EMB --> RET
-    RET <--> VEC
-    RET --> LLM
-    LLM --> CHAT
-
-    CHAT <--> PG
-    RAG --> PG
-    SPEECH --> MEDIA
-
-    CHAT --> API
-    SPEECH --> API
-    API --> UI
-```
-
-### Architecture Components
-
-| Component | Responsibility |
-|---|---|
-| Frontend | Provides the central button, mode selector, text input, microphone controls, and audio playback. |
-| Django REST Framework | Exposes APIs and coordinates application services. |
-| Authentication | Protects accounts and restricts access to user-owned data. |
-| Mode Router | Directs requests to the appropriate processing pipeline. |
-| Speech Service | Coordinates transcription and speech synthesis. |
-| RAG Orchestrator | Coordinates embeddings, retrieval, prompt construction, and AI generation. |
-| PostgreSQL | Stores users, conversations, messages, and metadata. |
-| pgvector | Stores and searches vector embeddings for semantic retrieval. |
-| AI Models | Perform speech recognition, speech synthesis, embedding generation, and text generation. |
-| Media Storage | Stores audio files and other large media assets outside the relational database. |
-
-## Interaction Workflow
-
-The central button activates the selected mode.
-
-### 1. Text-to-Text
+The application consists of four main layers.
 
 ```mermaid
 flowchart TD
-    A["Enter Text Prompt"] --> B["Send Request to Django API"]
-    B --> C["Generate Query Embedding"]
-    C --> D["Retrieve Relevant Context"]
-    D --> E["Construct Contextual Prompt"]
-    E --> F["Generate AI Response"]
-    F --> G["Save Messages in PostgreSQL"]
-    G --> H["Display Response"]
+    U[User] --> UI[Web Interface]
+    UI --> API[Django Backend]
+
+    API --> STT[Whisper Speech-to-Text]
+    API --> RAG[RAG Processing]
+    API --> TTS[gTTS Text-to-Speech]
+
+    STT --> RAG
+    RAG --> DB[(PostgreSQL + pgvector)]
+    RAG --> LLM[AI Language Model]
+    LLM --> DB
+    LLM --> UI
+
+    TTS --> UI
 ```
 
-### 2. Speech-to-Text
+### Components
+
+- **Frontend:** HTML, CSS, and JavaScript.
+- **Backend:** Django handles requests and application logic.
+- **Speech-to-Text:** Whisper converts English speech into text.
+- **Text-to-Speech:** gTTS generates English audio.
+- **RAG:** Retrieves relevant conversation information before generating a response.
+- **Database:** PostgreSQL stores messages, conversations, and embeddings.
+- **Vector Search:** pgvector finds semantically similar stored information.
+- **Language Model:** Generates AI responses using the retrieved context.
+
+## 4. Working of the Application
+
+### A. Text-to-Text
+
+1. The user enters an English message.
+2. Django receives the message.
+3. The RAG system searches for relevant previous conversations.
+4. The language model generates a contextual response.
+5. The conversation is stored in PostgreSQL.
+6. The response appears on the screen.
+
+### B. Speech-to-Text
+
+1. The user activates the microphone.
+2. The application records English speech.
+3. Whisper converts the audio into text.
+4. The transcript appears on the screen.
+5. The user can submit it to the AI assistant.
+6. The transcript and resulting response are saved.
+
+### C. Text-to-Speech
+
+1. The user enters text or selects an AI response.
+2. Django sends the text to gTTS.
+3. gTTS generates an MP3 audio file.
+4. The application returns the audio to the frontend.
+5. The user plays the generated English audio.
+
+## 5. RAG Architecture
+
+RAG helps the AI assistant use relevant information stored in previous conversations.
 
 ```mermaid
 flowchart TD
-    A["Activate Microphone"] --> B["Capture Audio"]
-    B --> C["Send Audio to Backend"]
-    C --> D["Speech Recognition"]
-    D --> E["Generate Transcript"]
-    E --> F["Save Transcript"]
-    F --> G{"Continue with AI?"}
-    G -- Yes --> H["RAG and AI Processing"]
-    H --> I["Display AI Response"]
-    G -- No --> J["Display Transcript"]
+    A[User Message] --> B[Generate Embedding]
+    B --> C[Search pgvector]
+    C --> D[Retrieve Relevant Context]
+    D --> E[Create Contextual Prompt]
+    E --> F[AI Language Model]
+    F --> G[Generate Response]
+    G --> H[Save Conversation]
+    H --> I[Display Response]
 ```
-
-### 3. Text-to-Speech
-
-```mermaid
-flowchart TD
-    A["Enter or Select Text"] --> B["Send Text to Backend"]
-    B --> C["Text-to-Speech Engine"]
-    C --> D["Generate Audio"]
-    D --> E["Store Audio Reference"]
-    E --> F["Return Audio to Frontend"]
-    F --> G["Play Audio"]
-```
-
-## RAG Architecture
-
-Retrieval-Augmented Generation combines stored knowledge with an AI language model to improve the relevance of responses.
 
 ### RAG Workflow
 
-```mermaid
-flowchart TD
-    A["User Query"] --> B["Embedding Generation"]
-    B --> C["Vector Similarity Search"]
-    C --> D["Retrieve Relevant Memories"]
-    D --> E["Build Contextual Prompt"]
-    E --> F["LLM Response Generation"]
-    F --> G["Return Answer"]
-    G --> H["Persist Conversation"]
-    H --> I["Index Eligible Text"]
-    I --> C
-```
+1. Receive the user's message.
+2. Convert the message into a numerical embedding.
+3. Search PostgreSQL using pgvector.
+4. Retrieve relevant stored information.
+5. Send the message and retrieved context to the language model.
+6. Generate and display the response.
+7. Save the new conversation for future retrieval.
 
-### How RAG Works
+**Note:** PostgreSQL stores the conversation data, while pgvector supports similarity search. An embedding model and a language model are also required; they are not automatically provided by Django or PostgreSQL.
 
-1. **Input:** Receive a typed prompt or a speech transcription.
-2. **Embedding:** Convert the query into a numerical vector.
-3. **Retrieval:** Search pgvector for semantically similar stored text.
-4. **Context construction:** Combine the query with relevant retrieved memories.
-5. **Generation:** Send the contextual prompt to the selected language model.
-6. **Persistence:** Store the user input and assistant response.
-7. **Indexing:** Generate embeddings for eligible text so it can be retrieved in future queries.
+## 6. Technology Stack
 
-The application should restrict retrieval to authorized user data and use appropriate indexing and deduplication policies.
+| Component | Technology |
+|---|---|
+| Frontend | HTML, CSS, JavaScript |
+| Backend | Python, Django |
+| API | Django REST Framework |
+| Database | PostgreSQL |
+| Vector Search | pgvector |
+| Speech-to-Text | OpenAI Whisper |
+| Text-to-Speech | gTTS |
+| Embeddings | Sentence Transformers |
+| AI Responses | Compatible LLM API or local model |
+| Version Control | Git and GitHub |
 
-**Important:** PostgreSQL stores the original records, while pgvector enables similarity search. RAG is primarily used for contextual text generation; speech transcription and synthesis can operate independently.
+## 7. Database Design
 
-##Technology Stack
+The initial application can use three main tables.
 
-| Layer | Technology | Purpose |
-|---|---|---|
-| Frontend | HTML, CSS, JavaScript | Interactive UI and central button |
-| Backend | Python, Django | Application logic |
-| REST API | Django REST Framework | Frontend-backend communication |
-| Database | PostgreSQL | Persistent data storage |
-| Vector Search | pgvector | Semantic memory retrieval |
-| Speech-to-Text | OpenAI Whisper | Transcribe user speech into text |
-| Text-to-Speech | gTTS (Google Text-to-Speech) | Convert text into spoken audio |
-| RAG Pipeline | Python-based RAG or LangChain | Context retrieval and prompt construction |
-| Embeddings | Sentence Transformers or embedding API | Generate vectors for semantic search |
-| Language Model | Hosted LLM API or local model | Generate contextual text responses |
-| Audio Storage | Local filesystem initially | Store generated audio files |
-| Version Control | Git and GitHub | Source code management |
+| Table | Purpose |
+|---|---|
+| Users | Stores user account information |
+| Conversations | Stores conversation details |
+| Messages | Stores user messages, AI responses, and embeddings |
 
-## Updated System Architecture
+Each message belongs to a conversation. Embeddings can be stored alongside message records or in a separate table if needed.
 
-```mermaid
-flowchart TD
-    USER["User"]
-
-    subgraph FRONTEND["Frontend Layer"]
-        UI["Web Interface"]
-        BTN["Central Interaction Button"]
-        MODE["Mode Selector"]
-        PLAYER["Microphone and Audio Player"]
-    end
-
-    subgraph BACKEND["Django Backend"]
-        API["Django REST Framework"]
-        ROUTER["Mode Router"]
-        CHAT["Conversation Service"]
-        SPEECH["Speech Processing Service"]
-        RAG["RAG Orchestrator"]
-    end
-
-    subgraph SPEECHAI["Speech Processing"]
-        WHISPER["OpenAI Whisper STT"]
-        GTTS["gTTS Engine"]
-    end
-
-    subgraph RAGAI["RAG and AI"]
-        EMB["Embedding Model"]
-        RET["Semantic Retriever"]
-        LLM["Language Model"]
-    end
-
-    subgraph STORAGE["Storage Layer"]
-        DB[("PostgreSQL")]
-        VEC[("pgvector")]
-        AUDIO[("Audio Files")]
-    end
-
-    USER --> UI
-    UI --> BTN
-    BTN --> MODE
-    PLAYER <--> UI
-    MODE --> API
-    API --> ROUTER
-
-    ROUTER --> CHAT
-    ROUTER --> SPEECH
-    ROUTER --> RAG
-
-    SPEECH --> WHISPER
-    SPEECH --> GTTS
-    WHISPER --> CHAT
-    GTTS --> AUDIO
-
-    RAG --> EMB
-    EMB --> RET
-    RET <--> VEC
-    RET --> LLM
-    LLM --> CHAT
-
-    CHAT <--> DB
-    RAG --> DB
-    SPEECH --> DB
-    CHAT --> API
-    SPEECH --> API
-    API --> UI
-```
-
-## Speech Processing Architecture
-
-### 1. Speech-to-Text using Whisper
-
-Whisper will process recorded audio and convert it into a text transcript.
-
-**Workflow:**
-
-1. User selects Speech-to-Text mode.
-2. The browser records audio through the microphone.
-3. Audio is uploaded to the Django backend.
-4. The Whisper model transcribes the recording.
-5. Django stores the transcript in PostgreSQL.
-6. The transcript is displayed to the user.
-7. Optionally, the transcript is passed to the RAG pipeline to generate an AI response.
-
-Whisper can be run locally or accessed through a compatible hosted API. For local execution, the Python package `openai-whisper` requires FFmpeg and a compatible PyTorch environment.
-
-### 2. Text-to-Speech using gTTS
-
-gTTS will convert text into an MP3 audio file.
-
-**Workflow:**
-
-1. User enters text or selects an AI-generated response.
-2. Django sends the text to the gTTS library.
-3. gTTS generates an MP3 file.
-4. The file is stored temporarily or in configured media storage.
-5. Django returns an audio URL or media reference.
-6. The frontend plays the generated audio.
-7. The text and audio metadata are saved for future access.
-
-**Important:** gTTS requires an internet connection because it uses Google's online text-to-speech service. It is not an offline TTS engine.
-
-## Updated RAG Workflow
-
-```mermaid
-flowchart TD
-    A["Typed Prompt or Whisper Transcript"]
-    B["Generate Query Embedding"]
-    C["Search PostgreSQL with pgvector"]
-    D["Retrieve Relevant Memories"]
-    E["Construct Contextual Prompt"]
-    F["Generate Response with LLM"]
-    G["Save User Message and AI Response"]
-    H["Display Text Response"]
-    I["Optional gTTS Audio Generation"]
-    J["Play Audio"]
-
-    A --> B
-    B --> C
-    C --> D
-    D --> E
-    E --> F
-    F --> G
-    G --> H
-    H --> I
-    I --> J
-```
-
-The RAG pipeline will handle text prompts and Whisper transcripts. Once the AI generates a response, gTTS can optionally speak the response aloud.
-
-## Additional Python Dependencies
-
-```text
-Django
-djangorestframework
-psycopg[binary]
-pgvector
-openai-whisper
-gTTS
-python-dotenv
-```
-
-Add other packages as required by your chosen embedding model, language model, and audio-processing implementation. Install FFmpeg separately for local Whisper processing.
-
-## Updated Project Structure
+## 8. Basic Project Structure
 
 ```text
 ai_voice_assistant/
@@ -376,19 +153,16 @@ ai_voice_assistant/
 │   ├── settings.py
 │   └── urls.py
 ├── apps/
-│   ├── accounts/
 │   ├── conversations/
-│   ├── speech/
-│   │   ├── stt.py          # Whisper transcription
-│   │   ├── tts.py          # gTTS audio generation
+│   │   ├── models.py
 │   │   └── views.py
-│   ├── rag/
-│   │   ├── embeddings.py
-│   │   ├── retriever.py
-│   │   ├── generator.py
-│   │   └── pipeline.py
-│   └── media/
-│       └── storage.py
+│   ├── speech/
+│   │   ├── stt.py
+│   │   └── tts.py
+│   └── rag/
+│       ├── embeddings.py
+│       ├── retriever.py
+│       └── pipeline.py
 ├── templates/
 ├── static/
 │   ├── css/
@@ -396,15 +170,48 @@ ai_voice_assistant/
 └── tests/
 ```
 
-## Updated Development Roadmap
+## 9. Required Python Packages
 
-- [ ] Configure Django and PostgreSQL.
-- [ ] Enable pgvector for semantic search.
-- [ ] Build the central-button interface and mode selector.
-- [ ] Integrate Whisper for speech transcription.
-- [ ] Integrate gTTS for audio generation.
-- [ ] Save transcripts, prompts, and responses in PostgreSQL.
-- [ ] Implement embeddings and RAG retrieval.
-- [ ] Connect Whisper transcripts to the AI response pipeline.
-- [ ] Add optional spoken AI responses using gTTS.
-- [ ] Test error handling, permissions, and audio playback.
+```text
+Django
+djangorestframework
+psycopg[binary]
+pgvector
+openai-whisper
+gTTS
+sentence-transformers
+python-dotenv
+```
+
+Install FFmpeg separately for local Whisper processing. Add the SDK or package required by the chosen language model.
+
+## 10. Security and Language Support
+
+- The application will support English only.
+- English audio will be transcribed using Whisper.
+- Responses will be generated in English.
+- gTTS will generate English speech using its English language setting.
+- User conversations must be protected through authentication and access controls.
+- API keys and database credentials must be stored in environment variables.
+- Audio files should be stored temporarily and deleted when no longer required.
+
+English-only support should be enforced through application instructions and validation. Speech recognition may still produce imperfect transcripts, so the application should allow users to review and correct them.
+
+## 11. Development Roadmap
+
+- [ ] Set up Django and PostgreSQL.
+- [ ] Create the basic web interface.
+- [ ] Implement text-to-text interaction.
+- [ ] Integrate Whisper for English speech recognition.
+- [ ] Integrate gTTS for English speech output.
+- [ ] Store conversations in PostgreSQL.
+- [ ] Enable pgvector and implement embeddings.
+- [ ] Build the RAG retrieval and response-generation pipeline.
+- [ ] Connect all three interaction modes.
+- [ ] Test the application and improve error handling.
+
+## 12. Expected Outcome
+
+The final application will provide a simple English-only AI assistant that accepts text and speech, generates AI responses, speaks responses aloud, and stores conversations for contextual retrieval.
+
+The project will demonstrate the practical integration of Django, PostgreSQL, speech-processing technologies, and Retrieval-Augmented Generation in a single web application.
