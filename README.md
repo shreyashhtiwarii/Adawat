@@ -1,217 +1,191 @@
-# AI Voice & Text Assistant with RAG
+# 🎙️ AI Voice & Text Assistant with RAG (ADAWAT)
 
-An AI-powered web application that allows users to communicate with an AI assistant using text and voice. The application supports **English only** and uses Retrieval-Augmented Generation (RAG) to retrieve relevant information from previous conversations and generate contextual responses.
+An AI-powered web application that allows users to communicate with an AI assistant using text and voice. The application supports **English only** and uses **Retrieval-Augmented Generation (RAG)** to retrieve relevant information from previous conversations and generate contextual, speech-enabled responses.
 
-**Technology Stack:** Django, PostgreSQL, pgvector, OpenAI Whisper, gTTS, HTML, CSS, and JavaScript.
+Built with **Django**, **PostgreSQL**, **pgvector**, **OpenAI Whisper**, **gTTS**, **HTML**, **CSS**, and **JavaScript**.
 
-## 1. Project Overview
+---
 
-The application provides three main features through a simple web interface:
+## 🌟 Key Features
 
-1. **Text-to-Text (TTT):** Users type a message and receive an AI-generated text response.
-2. **Speech-to-Text (STT):** Users speak in English, and Whisper converts their speech into text.
-3. **Text-to-Speech (TTS):** The application converts text or AI-generated responses into spoken English audio using gTTS.
+1. **Text-to-Text (TTT):**
+   - Type messages in English with instant AI responses.
+   - Preserves conversation turns and integrates contextual knowledge across past discussions.
 
-The system stores conversation history in PostgreSQL and uses RAG to retrieve relevant information from previous conversations.
+2. **Speech-to-Text (STT):**
+   - Click or hold the glowing central microphone button to record English speech.
+   - Live real-time audio waveform visualizer via the Web Audio API.
+   - High-accuracy speech transcription powered by **OpenAI Whisper**.
+   - Seamless browser Web Speech API fallback for maximum browser compatibility.
 
-## 2. Key Features
+3. **Text-to-Speech (TTS):**
+   - Generates natural, clear English spoken audio using **gTTS** (Google Text-to-Speech).
+   - "Listen" audio player directly on assistant responses.
+   - Automatic cleanup of temporary audio files to preserve disk space.
 
-- Simple interface with a central interaction button.
-- English-only voice and text interaction.
-- Speech recognition using OpenAI Whisper.
-- English speech generation using gTTS.
-- AI-generated responses using a language model.
-- Conversation history stored in PostgreSQL.
-- Semantic search using pgvector.
-- RAG-based contextual responses.
-- Basic user authentication and data protection.
+4. **Retrieval-Augmented Generation (RAG) & Vector Search:**
+   - Converts English messages into numerical semantic vector embeddings (384-dimensional).
+   - Queries stored conversations using **PostgreSQL + pgvector** cosine distance.
+   - Weaves retrieved memories into contextual prompts for the language model.
+   - Dedicated **Semantic Memory Inspector** modal to test vector similarity queries interactively.
 
-## 3. System Architecture
+5. **Multi-Provider LLM Engine:**
+   - Supports local offline LLMs via **Ollama** (`llama3.2:1b` pre-configured).
+   - Supports **OpenAI** API (`gpt-4o-mini`).
+   - Built-in intelligent rule fallback for zero-downtime offline testing.
 
-The application consists of four main layers.
+6. **Rich Modern Frontend:**
+   - Glassmorphism dark-mode UI with sleek glowing micro-animations.
+   - Full conversation management (create, switch, delete, clear all).
+   - Responsive layout for desktop, tablets, and mobile devices.
+
+---
+
+## 🏗️ System Architecture
 
 ```mermaid
 flowchart TD
-    U[User] --> UI[Web Interface]
-    UI --> API[Django Backend]
+    U[User] --> UI[Web Interface: Central Mic & Chat]
+    UI --> API[Django REST Backend]
 
-    API --> STT[Whisper Speech-to-Text]
-    API --> RAG[RAG Processing]
-    API --> TTS[gTTS Text-to-Speech]
+    API --> STT[OpenAI Whisper STT]
+    API --> RAG[RAG Semantic Pipeline]
+    API --> TTS[gTTS English Audio]
 
     STT --> RAG
-    RAG --> DB[(PostgreSQL + pgvector)]
-    RAG --> LLM[AI Language Model]
+    RAG --> DB[(PostgreSQL + pgvector / Vector DB)]
+    RAG --> LLM[Ollama Llama 3.2 / OpenAI API]
     LLM --> DB
     LLM --> UI
 
     TTS --> UI
 ```
 
-### Components
+---
 
-- **Frontend:** HTML, CSS, and JavaScript.
-- **Backend:** Django handles requests and application logic.
-- **Speech-to-Text:** Whisper converts English speech into text.
-- **Text-to-Speech:** gTTS generates English audio.
-- **RAG:** Retrieves relevant conversation information before generating a response.
-- **Database:** PostgreSQL stores messages, conversations, and embeddings.
-- **Vector Search:** pgvector finds semantically similar stored information.
-- **Language Model:** Generates AI responses using the retrieved context.
+## 🚀 Quick Start Guide
 
-## 4. Working of the Application
+### 1. Prerequisites
+- **Python 3.10+** (Python 3.11 recommended)
+- **Ollama** (optional for local LLM, or set `OPENAI_API_KEY` in `.env`)
+- **PostgreSQL 15+ with pgvector** (optional: falls back to SQLite automatically if PostgreSQL is not configured!)
 
-### A. Text-to-Text
+### 2. Virtual Environment Setup
+```bash
+# Clone or navigate to the repository
+cd Adawat
 
-1. The user enters an English message.
-2. Django receives the message.
-3. The RAG system searches for relevant previous conversations.
-4. The language model generates a contextual response.
-5. The conversation is stored in PostgreSQL.
-6. The response appears on the screen.
+# Activate the virtual environment
+# On Windows PowerShell:
+.\.venv\Scripts\Activate.ps1
+# On Linux/macOS:
+source .venv/bin/activate
 
-### B. Speech-to-Text
-
-1. The user activates the microphone.
-2. The application records English speech.
-3. Whisper converts the audio into text.
-4. The transcript appears on the screen.
-5. The user can submit it to the AI assistant.
-6. The transcript and resulting response are saved.
-
-### C. Text-to-Speech
-
-1. The user enters text or selects an AI response.
-2. Django sends the text to gTTS.
-3. gTTS generates an MP3 audio file.
-4. The application returns the audio to the frontend.
-5. The user plays the generated English audio.
-
-## 5. RAG Architecture
-
-RAG helps the AI assistant use relevant information stored in previous conversations.
-
-```mermaid
-flowchart TD
-    A[User Message] --> B[Generate Embedding]
-    B --> C[Search pgvector]
-    C --> D[Retrieve Relevant Context]
-    D --> E[Create Contextual Prompt]
-    E --> F[AI Language Model]
-    F --> G[Generate Response]
-    G --> H[Save Conversation]
-    H --> I[Display Response]
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-### RAG Workflow
-
-1. Receive the user's message.
-2. Convert the message into a numerical embedding.
-3. Search PostgreSQL using pgvector.
-4. Retrieve relevant stored information.
-5. Send the message and retrieved context to the language model.
-6. Generate and display the response.
-7. Save the new conversation for future retrieval.
-
-**Note:** PostgreSQL stores the conversation data, while pgvector supports similarity search. An embedding model and a language model are also required; they are not automatically provided by Django or PostgreSQL.
-
-## 6. Technology Stack
-
-| Component | Technology |
-|---|---|
-| Frontend | HTML, CSS, JavaScript |
-| Backend | Python, Django |
-| API | Django REST Framework |
-| Database | PostgreSQL |
-| Vector Search | pgvector |
-| Speech-to-Text | OpenAI Whisper |
-| Text-to-Speech | gTTS |
-| Embeddings | Sentence Transformers |
-| AI Responses | Compatible LLM API or local model |
-| Version Control | Git and GitHub |
-
-## 7. Database Design
-
-The initial application can use three main tables.
-
-| Table | Purpose |
-|---|---|
-| Users | Stores user account information |
-| Conversations | Stores conversation details |
-| Messages | Stores user messages, AI responses, and embeddings |
-
-Each message belongs to a conversation. Embeddings can be stored alongside message records or in a separate table if needed.
-
-## 8. Basic Project Structure
-
-```text
-ai_voice_assistant/
-├── manage.py
-├── requirements.txt
-├── .env
-├── config/
-│   ├── settings.py
-│   └── urls.py
-├── apps/
-│   ├── conversations/
-│   │   ├── models.py
-│   │   └── views.py
-│   ├── speech/
-│   │   ├── stt.py
-│   │   └── tts.py
-│   └── rag/
-│       ├── embeddings.py
-│       ├── retriever.py
-│       └── pipeline.py
-├── templates/
-├── static/
-│   ├── css/
-│   └── js/
-└── tests/
+### 3. Environment Configuration
+Copy `.env.example` to `.env` (already created with sensible defaults):
+```bash
+cp .env.example .env
 ```
 
-## 9. Required Python Packages
+Key variables in `.env`:
+```ini
+SECRET_KEY=django-insecure-voice-rag-assistant-super-secret-key-2026
+DEBUG=True
+ALLOWED_HOSTS=*
 
-```text
-Django
-djangorestframework
-psycopg[binary]
-pgvector
-openai-whisper
-gTTS
-sentence-transformers
-python-dotenv
+# Database: SQLite (default zero-config) or PostgreSQL with pgvector
+DB_ENGINE=django.db.backends.sqlite3
+DB_NAME=db.sqlite3
+
+# For PostgreSQL with pgvector:
+# DB_ENGINE=django.db.backends.postgresql
+# DB_NAME=voice_assistant_db
+# DB_USER=postgres
+# DB_PASSWORD=your_password
+# DB_HOST=localhost
+# DB_PORT=5432
+
+# Language Model Provider ('ollama' or 'openai')
+LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=http://127.0.0.1:11434
+OLLAMA_MODEL=llama3.2:1b
+
+# Optional OpenAI key if using OPENAI
+OPENAI_API_KEY=
 ```
 
-Install FFmpeg separately for local Whisper processing. Add the SDK or package required by the chosen language model.
+### 4. Run Migrations & Start Server
+```bash
+# Apply database migrations
+python manage.py migrate
 
-## 10. Security and Language Support
+# Start the Django development server
+python manage.py runserver
+```
 
-- The application will support English only.
-- English audio will be transcribed using Whisper.
-- Responses will be generated in English.
-- gTTS will generate English speech using its English language setting.
-- User conversations must be protected through authentication and access controls.
-- API keys and database credentials must be stored in environment variables.
-- Audio files should be stored temporarily and deleted when no longer required.
+Open your browser at **[http://127.0.0.1:8000/](http://127.0.0.1:8000/)**.
 
-English-only support should be enforced through application instructions and validation. Speech recognition may still produce imperfect transcripts, so the application should allow users to review and correct them.
+---
 
-## 11. Development Roadmap
+## 📡 REST API Reference
 
-- [ ] Set up Django and PostgreSQL.
-- [ ] Create the basic web interface.
-- [ ] Implement text-to-text interaction.
-- [ ] Integrate Whisper for English speech recognition.
-- [ ] Integrate gTTS for English speech output.
-- [ ] Store conversations in PostgreSQL.
-- [ ] Enable pgvector and implement embeddings.
-- [ ] Build the RAG retrieval and response-generation pipeline.
-- [ ] Connect all three interaction modes.
-- [ ] Test the application and improve error handling.
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/` | Main interactive Voice & Text web application |
+| `POST` | `/api/rag/chat/` | Combined RAG chat endpoint (accepts text, queries pgvector, generates response & TTS audio) |
+| `GET` | `/api/rag/search/?q={query}` | Searches pgvector database for semantically similar previous messages |
+| `GET` | `/api/rag/stats/` | Returns system status, active LLM, and embedding count |
+| `POST` | `/api/speech/stt/` | Uploads audio recording and returns Whisper English transcript |
+| `POST` | `/api/speech/tts/` | Converts English text into spoken MP3 audio via gTTS |
+| `GET, POST` | `/api/conversations/` | List all conversations or create a new conversation |
+| `GET` | `/api/conversations/{id}/` | Get conversation details or delete conversation |
+| `GET` | `/api/conversations/{id}/export/?export_type=text` | Export conversation as formatted text or JSON |
+| `POST` | `/api/conversations/clear/` | Clears all conversation history |
 
-## 12. Expected Outcome
+---
 
-The final application will provide a simple English-only AI assistant that accepts text and speech, generates AI responses, speaks responses aloud, and stores conversations for contextual retrieval.
+## 🐳 Quick Start PostgreSQL with pgvector (Optional)
 
-The project will demonstrate the practical integration of Django, PostgreSQL, speech-processing technologies, and Retrieval-Augmented Generation in a single web application.
+To run a production-grade PostgreSQL instance with pgvector using Docker:
+```bash
+# Start PostgreSQL 16 with pgvector in the background
+docker compose up -d
+
+# Set in your .env file:
+# DB_ENGINE=django.db.backends.postgresql
+# DB_NAME=voice_assistant_db
+# DB_USER=postgres
+# DB_PASSWORD=postgres
+# DB_HOST=localhost
+# DB_PORT=5432
+
+# Apply migrations (pgvector extension is activated automatically)
+python manage.py migrate
+```
+
+---
+
+## 🧪 Running Automated Tests
+
+Run the complete test suite covering conversations, speech synthesis, embeddings, and RAG pipelines:
+```bash
+# On Windows PowerShell:
+.\.venv\Scripts\python.exe manage.py test
+
+# On Linux/macOS:
+python manage.py test
+```
+
+---
+
+## 🔒 Security & English-Only Enforcement
+
+- **English-Only Instructions:** The LLM system prompt strictly mandates English responses.
+- **Whisper & gTTS Settings:** Enforced `language='en'` and `lang='en'` parameters.
+- **Audio Storage Hygiene:** Audio files are stored temporarily in `media/audio/` and automatically pruned via cleanup routines to prevent unneeded disk accumulation.
+- **Safe Environment Variables:** Database credentials and API keys are managed exclusively via `.env`.
+
