@@ -1,0 +1,319 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice & Text AI Assistant | RAG Powered</title>
+    <meta name="description" content="AI-Powered Voice and Text Assistant with RAG, PostgreSQL pgvector, OpenAI Whisper STT, and gTTS. English Only.">
+    
+    <!-- Google Fonts: Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Modern Styling -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body class="dark-theme">
+    <div class="app-container">
+        <!-- Sidebar: Conversation History & Context -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="brand">
+                    <div class="brand-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                            <line x1="12" y1="19" x2="12" y2="22"></line>
+                        </svg>
+                    </div>
+                    <div class="brand-text">
+                        <h2>ADAWAT</h2>
+                        <span class="badge-en">EN ONLY</span>
+                    </div>
+                </div>
+                <button class="icon-btn close-sidebar-btn" id="closeSidebarBtn" title="Close Sidebar" aria-label="Close Sidebar">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <button class="new-chat-btn" id="newChatBtn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>New Conversation</span>
+            </button>
+
+            <!-- Conversations List -->
+            <div class="conversations-wrapper">
+                <div class="section-title">
+                    <span>Recent Chats</span>
+                    <button class="clear-all-link" id="clearAllChatsBtn" title="Clear All History">Clear All</button>
+                </div>
+                <div class="conversations-list" id="conversationsList">
+                    <div class="loading-state">Loading conversations...</div>
+                </div>
+            </div>
+
+            <!-- System Info Card -->
+            <div class="sidebar-footer">
+                <div class="sys-info-card">
+                    <div class="sys-item">
+                        <span class="dot live"></span>
+                        <span class="sys-label">LLM:</span>
+                        <span class="sys-val" id="sysLlm">Ollama (Llama 3.2)</span>
+                    </div>
+                    <div class="sys-item">
+                        <span class="dot live"></span>
+                        <span class="sys-label">Vector DB:</span>
+                        <span class="sys-val" id="sysDb">Postgres / pgvector</span>
+                    </div>
+                    <div class="sys-item">
+                        <span class="dot live"></span>
+                        <span class="sys-label">STT / TTS:</span>
+                        <span class="sys-val">Whisper / gTTS</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="main-content">
+            <!-- App Header -->
+            <header class="chat-header">
+                <div class="header-left">
+                    <button class="icon-btn" id="openSidebarBtn" title="Toggle Sidebar" aria-label="Toggle Sidebar">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div class="current-chat-meta">
+                        <h1 class="chat-title" id="currentChatTitle">AI Voice & Text Assistant</h1>
+                        <span class="chat-subtitle" id="chatSubtitle">Retrieval-Augmented Generation &bull; English Voice Enabled</span>
+                    </div>
+                </div>
+
+                <div class="header-right">
+                    <button class="pill-btn" id="exportChatBtn" title="Export Current Conversation" style="display: none;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        <span>Export</span>
+                    </button>
+                    <button class="pill-btn" id="ragInspectorBtn" title="Inspect Semantic Memory & Vector Search">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <span>Memory Search</span>
+                    </button>
+                    <button class="icon-btn" id="settingsBtn" title="Assistant Settings" aria-label="Settings">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Interaction Zone: Chat Messages Stream -->
+            <div class="chat-viewport" id="chatViewport">
+                <div class="messages-container" id="messagesContainer">
+                    <!-- Hero Welcome Card -->
+                    <div class="welcome-card" id="welcomeCard">
+                        <div class="hero-badge">ENGLISH-ONLY RAG ASSISTANT</div>
+                        <h2>Speak or Type in English</h2>
+                        <p>Powered by <strong>OpenAI Whisper</strong> speech-to-text, <strong>gTTS</strong> voice generation, and <strong>pgvector</strong> for contextual recall across conversations.</p>
+                        
+                        <div class="features-grid">
+                            <div class="feature-card" id="featureTTT">
+                                <div class="f-icon">💬</div>
+                                <h4>Text-to-Text</h4>
+                                <p>Type in English. Responses are synthesized with semantic memory.</p>
+                            </div>
+                            <div class="feature-card" id="featureSTT">
+                                <div class="f-icon">🎙️</div>
+                                <h4>Speech-to-Text</h4>
+                                <p>Press the central mic button to transcribe your speech using Whisper.</p>
+                            </div>
+                            <div class="feature-card" id="featureTTS">
+                                <div class="f-icon">🔊</div>
+                                <h4>Text-to-Speech</h4>
+                                <p>Listen to responses in natural spoken English generated with gTTS.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Central Voice Interaction Banner & Waveform -->
+            <div class="voice-center-stage" id="voiceCenterStage">
+                <div class="recording-bar" id="recordingBar" style="display: none;">
+                    <div class="rec-indicator">
+                        <span class="rec-dot"></span>
+                        <span class="rec-label">LISTENING TO ENGLISH SPEECH</span>
+                        <span class="rec-timer" id="recordingTimer">00:00</span>
+                    </div>
+                    <canvas id="waveformCanvas" width="400" height="36"></canvas>
+                    <button class="cancel-rec-btn" id="cancelRecBtn" title="Cancel Recording">Cancel</button>
+                </div>
+            </div>
+
+            <!-- Single Button Bottom Interaction Area -->
+            <footer class="interaction-footer single-button-layout">
+                <div class="single-button-wrapper">
+                    <button class="single-chat-btn" id="singleChatBtn" aria-label="Single Chat Interaction Button">
+                        <div class="pulse-ring ring-1"></div>
+                        <div class="pulse-ring ring-2"></div>
+                        <div class="pulse-ring ring-3"></div>
+                        <div class="btn-glow-orb"></div>
+                        
+                        <div class="btn-inner-content">
+                            <div class="btn-icon-box">
+                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="btn-icon mic-state-icon" id="micStateIcon">
+                                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                    <line x1="12" y1="19" x2="12" y2="22"></line>
+                                </svg>
+                                <span class="btn-icon stop-state-icon" id="stopStateIcon" style="display: none;"></span>
+                                <div class="btn-icon spinner-state-icon" id="spinnerStateIcon" style="display: none;"></div>
+                            </div>
+                            <div class="btn-text-box">
+                                <span class="btn-main-title" id="btnMainTitle">Tap to Speak</span>
+                                <span class="btn-sub-title" id="btnSubTitle">Voice & RAG Assistant &bull; English Only</span>
+                            </div>
+                        </div>
+                    </button>
+
+                    <!-- Optional discrete text mode toggle -->
+                    <div class="discrete-text-toggle">
+                        <button class="text-mode-btn" id="textModeToggleBtn" title="Prefer typing English text?">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                                <line x1="6" y1="8" x2="6" y2="8"></line>
+                                <line x1="10" y1="8" x2="10" y2="8"></line>
+                                <line x1="14" y1="8" x2="14" y2="8"></line>
+                                <line x1="18" y1="8" x2="18" y2="8"></line>
+                                <line x1="6" y1="12" x2="6" y2="12"></line>
+                                <line x1="18" y1="12" x2="18" y2="12"></line>
+                                <line x1="7" y1="16" x2="17" y2="16"></line>
+                            </svg>
+                            <span>Type message instead</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Hidden / Expandable Quick Text Input Popover (used when clicking 'Type message instead') -->
+                <div class="text-popup-drawer" id="textPopupDrawer" style="display: none;">
+                    <div class="text-popup-inner">
+                        <textarea id="messageInput" rows="1" placeholder="Type your English message..."></textarea>
+                        <button class="send-text-btn" id="sendBtn" title="Send message">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="22" y1="2" x2="11" y2="13"></line>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                            </svg>
+                        </button>
+                        <button class="close-text-btn" id="closeTextDrawerBtn" title="Close text mode">✕</button>
+                    </div>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <!-- RAG Memory Search Modal -->
+    <div class="modal-backdrop" id="ragModal" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <h3>Semantic Memory Search (pgvector)</h3>
+                </div>
+                <button class="icon-btn close-modal-btn" id="closeRagModalBtn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-desc">Query your conversation database in real-time to inspect how semantic similarity vectors match relevant previous discussions.</p>
+                <div class="search-input-group">
+                    <input type="text" id="ragSearchInput" placeholder="Enter a concept (e.g. 'project deadline', 'favorite color', 'python tips')...">
+                    <button class="pill-btn primary" id="execRagSearchBtn">Search pgvector</button>
+                </div>
+                <div class="rag-results-container" id="ragResultsContainer">
+                    <div class="empty-hint">Type a query above to test similarity vector retrieval.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-backdrop" id="settingsModal" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                    <h3>Assistant Settings</h3>
+                </div>
+                <button class="icon-btn close-modal-btn" id="closeSettingsModalBtn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body settings-grid">
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-title">Auto-Play Voice (TTS)</div>
+                        <div class="setting-desc">Automatically play gTTS spoken English audio when response arrives</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="settingAutoplay" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-title">Speech Recognition Engine</div>
+                        <div class="setting-desc">Server Whisper (local model) or Browser Live Web Speech</div>
+                    </div>
+                    <select id="settingSttMode" class="form-select">
+                        <option value="whisper" selected>OpenAI Whisper (Server STT)</option>
+                        <option value="browser">Browser Live STT (Web Speech)</option>
+                    </select>
+                </div>
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-title">Language Enforced</div>
+                        <div class="setting-desc">This assistant strictly processes and speaks English</div>
+                    </div>
+                    <span class="badge-en">English (en-US)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden audio element for TTS playback -->
+    <audio id="globalAudioPlayer" style="display: none;"></audio>
+
+    <!-- JavaScript Application Logic -->
+    <script src="{% static 'js/app.js' %}"></script>
+</body>
+</html>
